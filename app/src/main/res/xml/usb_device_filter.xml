@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- USB device filter for common CAN adapters -->
+    <usb-device vendor-id="1155" /> <!-- ELM327 common vendor ID -->
+    <usb-device vendor-id="1027" /> <!-- FTDI vendor ID -->
+    <usb-device vendor-id="1003" /> <!-- Generic CAN adapter -->
+</resources>
