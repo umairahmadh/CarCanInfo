@@ -1,36 +1,81 @@
 # CarCanInfo
 
-A lightweight, fast native Android app for displaying CAN data on Android head units. Designed as a better alternative to the default Car Info apps, with support for CAN adapters like Raise and optimized for older vehicles such as Volkswagen pre-MQB platform.
+A lightweight, fast native Android app for displaying CAN data on Android head units. Designed as a better alternative to the default Car Info apps, with **built-in CAN module support**, external adapter compatibility (Raise, ELM327), and optimized for older vehicles such as Volkswagen pre-MQB platform.
+
+## ✨ Key Highlights
+
+- **🔌 Built-in CAN Support**: Direct integration with head unit CAN hardware (no external adapter needed!)
+- **📊 Real-time Monitoring**: 8 vehicle parameters with 200ms refresh rate
+- **🔧 DTC Management**: Read and clear diagnostic trouble codes
+- **📝 Data Logging**: Export vehicle data to CSV files
+- **⚙️ Full Settings**: Metric/Imperial units, refresh rates, and more
+- **🎨 Multiple Gauge Styles**: Digital, Analog, and Bar visualizations
 
 ## Features
 
-- **Real-time CAN Data Display**: Monitor vehicle parameters in real-time
-  - Speed (km/h or mph)
-  - Engine RPM
-  - Coolant Temperature
-  - Fuel Level
-  - Engine Load
-  - Throttle Position
-  - Battery Voltage
-  - Intake Temperature
+### Real-Time Data Display
+- Speed (km/h or mph)
+- Engine RPM
+- Coolant Temperature (°C or °F)
+- Fuel Level (%)
+- Engine Load (%)
+- Throttle Position (%)
+- Battery Voltage (V)
+- Intake Temperature (°C)
 
-- **Optimized for Head Units**: 
-  - Landscape orientation
-  - Large, easy-to-read displays
-  - Dark theme for night driving
-  - Immersive fullscreen UI
+### CAN Adapter Support
 
-- **Small & Fast**: 
-  - Minimal APK size
-  - Optimized for performance
-  - Low memory footprint
-  - Smooth 60fps updates
+**Built-in CAN Modules** (NEW!)
+- Direct hardware integration for head units
+- Access to native CAN devices (`/dev/can0`, `/dev/canbus`, etc.)
+- SocketCAN interface support
+- Faster and more reliable than external adapters
+- No additional hardware required
 
-- **CAN Adapter Support**:
-  - Compatible with standard OBD-II/CAN adapters
-  - Support for Raise adapter
-  - USB and Bluetooth connectivity
-  - ELM327 protocol support
+**External Adapters**
+- ELM327 (USB/Bluetooth)
+- Raise CAN adapter
+- Generic OBD-II adapters
+- Automatic adapter detection
+
+### Diagnostic Tools
+
+**DTC (Diagnostic Trouble Codes)**
+- Read current DTCs
+- Read pending DTCs  
+- Read permanent DTCs
+- Clear all DTCs
+- 15+ common code descriptions
+- Severity classification (Info/Warning/Critical)
+
+### Data Logging
+- Export to CSV format
+- Configurable logging interval
+- Automatic file rotation
+- Export and share logs
+- All parameters included with timestamps
+
+### Settings & Customization
+- **Units**: Metric or Imperial
+- **Refresh Rate**: 100ms to 1000ms
+- **Gauge Style**: Digital, Analog, or Bar
+- **Theme**: Dark mode (with auto night mode option)
+- **Adapter**: Prefer built-in or external
+- **Logging**: Enable/disable with custom intervals
+
+### Optimized for Head Units
+- Landscape orientation
+- Large, easy-to-read displays
+- Dark theme for night driving
+- Immersive fullscreen UI
+- 200ms default refresh (5 Hz)
+
+### Small & Fast
+- Minimal APK size (< 5 MB)
+- Optimized for performance
+- Low memory footprint
+- Smooth 60fps updates
+- ProGuard optimization
 
 ## Requirements
 
