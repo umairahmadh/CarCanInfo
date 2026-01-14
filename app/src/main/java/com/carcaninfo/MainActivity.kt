@@ -6,9 +6,12 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.carcaninfo.can.CanAdapter
-import com.carcaninfo.can.SimulatedCanAdapter
+import com.carcaninfo.can.CanAdapterFactory
+import com.carcaninfo.dtc.DtcManager
+import com.carcaninfo.logging.DataLogger
 import com.carcaninfo.model.ConnectionStatus
 import com.carcaninfo.model.VehicleData
+import com.carcaninfo.settings.SettingsManager
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -16,11 +19,17 @@ import kotlinx.coroutines.launch
 
 /**
  * Main activity displaying vehicle CAN data
+ * Now with support for built-in CAN modules, DTC reading, and data logging
  */
 class MainActivity : AppCompatActivity() {
     
     private lateinit var canAdapter: CanAdapter
+    private lateinit var dtcManager: DtcManager
+    private lateinit var dataLogger: DataLogger
+    private lateinit var settingsManager: SettingsManager
+    
     private var updateJob: Job? = null
+    private var loggingJob: Job? = null
     private var connectionStatus = ConnectionStatus.DISCONNECTED
     
     // UI Elements
@@ -56,7 +65,7 @@ class MainActivity : AppCompatActivity() {
         }
         
         initializeViews()
-        initializeAdapter()
+        initializeManagers()
         connectToAdapter()
     }
     
@@ -71,21 +80,43 @@ class MainActivity : AppCompatActivity() {
         throttleValue = findViewById(R.id.throttleValue)
     }
     
-    private fun initializeAdapter() {
-        // Use simulated adapter for now
-        // Replace with ObdCanAdapter() when connected to real hardware
-        canAdapter = SimulatedCanAdapter()
+    private fun initializeManagers() {
+        // Initialize settings manager and load settings
+        settingsManager = SettingsManager(this)
+        val settings = settingsManager.loadSettings()
+        
+        // Initialize data logger
+        dataLogger = DataLogger(this)
+        
+        // DTC manager will be initialized after CAN adapter connection
     }
     
     private fun connectToAdapter() {
         lifecycleScope.launch {
             updateConnectionStatus(ConnectionStatus.CONNECTING)
             
-            val connected = canAdapter.connect()
+            val settings = settingsManager.loadSettings()
             
-            if (connected) {
+            // Use adapter factory to get the best available adapter
+            // This will try built-in CAN first, then OBD adapter, then simulated
+            canAdapter = CanAdapterFactory.createAdapter(
+                this@MainActivity,
+                if (settings.autoConnect) settings.preferredAdapter else null
+            )
+            
+            if (canAdapter.isConnected()) {
                 updateConnectionStatus(ConnectionStatus.CONNECTED)
+                
+                // Initialize DTC manager with connected adapter
+                dtcManager = DtcManager(canAdapter)
+                
+                // Start data updates
                 startDataUpdates()
+                
+                // Start logging if enabled in settings
+                if (settings.enableLogging) {
+                    startDataLogging()
+                }
             } else {
                 updateConnectionStatus(ConnectionStatus.ERROR)
             }
@@ -94,12 +125,16 @@ class MainActivity : AppCompatActivity() {
     
     private fun startDataUpdates() {
         updateJob?.cancel()
+        
+        val settings = settingsManager.loadSettings()
+        val refreshRate = settings.refreshRate.toLong()
+        
         updateJob = lifecycleScope.launch {
             while (isActive && canAdapter.isConnected()) {
                 try {
                     val data = canAdapter.readVehicleData()
                     updateUI(data)
-                    delay(200) // Update every 200ms for smooth display
+                    delay(refreshRate)
                 } catch (e: Exception) {
                     e.printStackTrace()
                     updateConnectionStatus(ConnectionStatus.ERROR)
@@ -109,16 +144,44 @@ class MainActivity : AppCompatActivity() {
         }
     }
     
+    private fun startDataLogging() {
+        loggingJob?.cancel()
+        
+        val settings = settingsManager.loadSettings()
+        val logInterval = settings.logInterval.toLong()
+        
+        lifecycleScope.launch {
+            dataLogger.startLogging()
+            
+            loggingJob = launch {
+                while (isActive && canAdapter.isConnected()) {
+                    try {
+                        val data = canAdapter.readVehicleData()
+                        dataLogger.logData(data)
+                        delay(logInterval)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        break
+                    }
+                }
+            }
+        }
+    }
+    
     private fun updateUI(data: VehicleData) {
         runOnUiThread {
-            // Update speed
-            speedValue.text = data.speed.toString()
+            val settings = settingsManager.loadSettings()
+            
+            // Update speed (convert to mph if imperial)
+            val speed = if (settings.useMetric) data.speed else (data.speed * 0.621371).toInt()
+            speedValue.text = speed.toString()
             
             // Update RPM
             rpmValue.text = data.rpm.toString()
             
-            // Update coolant temperature
-            coolantValue.text = data.coolantTemp.toString()
+            // Update coolant temperature (convert to Fahrenheit if imperial)
+            val coolant = if (settings.useMetric) data.coolantTemp else ((data.coolantTemp * 9/5) + 32)
+            coolantValue.text = coolant.toString()
             
             // Update fuel level
             fuelValue.text = data.fuelLevel.toString()
@@ -148,8 +211,12 @@ class MainActivity : AppCompatActivity() {
     
     override fun onDestroy() {
         super.onDestroy()
-        updateJob?.cancel()
-        canAdapter.disconnect()
+        lifecycleScope.launch {
+            updateJob?.cancel()
+            loggingJob?.cancel()
+            dataLogger.stopLogging()
+            canAdapter.disconnect()
+        }
     }
     
     override fun onPause() {

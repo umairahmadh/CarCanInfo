@@ -15,6 +15,15 @@
     <!-- Foreground service for continuous monitoring -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     
+    <!-- Storage permissions for data logging -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    
+    <!-- Access to CAN hardware (built-in modules) -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_PRIVILEGED_PHONE_STATE" 
+        tools:ignore="ProtectedPermissions" />
+    
     <!-- Automotive feature -->
     <uses-feature 
         android:name="android.hardware.type.automotive" 
