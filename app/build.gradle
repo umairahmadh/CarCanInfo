@@ -48,9 +48,6 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
     implementation 'androidx.lifecycle:lifecycle-runtime-ktx:2.6.2'
     
-    // Car support library
-    implementation 'androidx.car.app:app:1.3.0'
-    
     // Coroutines for async operations
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3'
 }

@@ -96,10 +96,22 @@ class ObdCanAdapter : CanAdapter {
     
     override suspend fun sendCommand(command: String): String? {
         // TODO: Implement actual serial/USB communication
-        // This is a placeholder for the actual implementation
+        // This is a placeholder that returns mock responses for testing
         Log.d(TAG, "Sending command: $command")
         delay(50)
-        return null
+        
+        // Return mock responses for testing (will be replaced with actual adapter communication)
+        return when {
+            command.startsWith("010C") -> "41 0C 1F 40" // RPM mock (2-byte: ~2000 RPM)
+            command.startsWith("010D") -> "41 0D 2D" // Speed mock
+            command.startsWith("0105") -> "41 05 5A" // Coolant mock
+            command.startsWith("012F") -> "41 2F 80" // Fuel mock
+            command.startsWith("0104") -> "41 04 40" // Load mock
+            command.startsWith("0111") -> "41 11 50" // Throttle mock
+            command.startsWith("010F") -> "41 0F 3C" // Intake temp mock
+            command.startsWith("ATRV") -> "12.8V" // Voltage mock
+            else -> "OK"
+        }
     }
     
     private suspend fun readSpeed(): Int {
@@ -109,7 +121,7 @@ class ObdCanAdapter : CanAdapter {
     
     private suspend fun readRpm(): Int {
         val response = sendCommand(PID_ENGINE_RPM)
-        return parseHexValue(response, 0) / 4
+        return parseMultiByteValue(response, 0) / 4
     }
     
     private suspend fun readCoolantTemp(): Int {
@@ -146,15 +158,48 @@ class ObdCanAdapter : CanAdapter {
         if (response.isNullOrEmpty()) return 0
         
         return try {
-            // Parse OBD-II response format: "41 0C 1A F8" -> extract data bytes
+            // Parse OBD-II response format: "41 0C 1A F8" 
+            // Expected format: [mode+0x40] [PID] [data bytes...]
             val bytes = response.split(" ").filter { it.length == 2 }
-            if (bytes.size >= 3) {
+            
+            // Validate response has proper OBD-II format
+            if (bytes.size >= 3 && bytes[0] == "41") {
+                // bytes[0] = 41 (response to mode 01)
+                // bytes[1] = PID
+                // bytes[2+] = data
                 val value = bytes[2].toInt(16)
                 value + offset
             } else {
                 0
             }
         } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse hex value: ${e.message}")
+            0
+        }
+    }
+    
+    private fun parseMultiByteValue(response: String?, offset: Int = 0): Int {
+        if (response.isNullOrEmpty()) return 0
+        
+        return try {
+            // Parse OBD-II multi-byte response format: "41 0C 1A F8"
+            // For RPM and other 2-byte values: ((A*256)+B)
+            val bytes = response.split(" ").filter { it.length == 2 }
+            
+            // Validate response has proper OBD-II format
+            if (bytes.size >= 4 && bytes[0] == "41") {
+                // bytes[0] = 41 (response to mode 01)
+                // bytes[1] = PID
+                // bytes[2] = A (high byte)
+                // bytes[3] = B (low byte)
+                val a = bytes[2].toInt(16)
+                val b = bytes[3].toInt(16)
+                (a * 256 + b) + offset
+            } else {
+                0
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to parse multi-byte value: ${e.message}")
             0
         }
     }
